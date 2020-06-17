@@ -42,6 +42,13 @@ FPGA<D>
 	this->set_name(name);
 	this->set_short_name(name);
 
+	// Read/write file automatically linked with this module for performance testing
+	const char* fread = "/dev/xdma0_c2h_0";
+	const char* fwrite = "/dev/xdma0_h2c_0";
+	this->fs_write = fopen(fwrite, "wb");
+	this->fs_read = fopen(fread, "rb");
+	
+
 	if (N <= 0)
 	{
 		std::stringstream message;
@@ -118,23 +125,23 @@ void FPGA<D>
 ::_send(D *X_N, const int frame_id)
 {
 	// Write implementation
-	const char* fname = "/dev/xdma0_h2c_0";
-	FILE* fs = fopen(fname,"wb");
+	const char* fwrite = "/dev/xdma0_h2c_0";
 
 	const size_t size = sizeof(*X_N);
 	const size_t count = this->N*this->n_frames;
 
-	void* allocated = aligned_alloc(size, size*count);
-	memcpy(allocated, X_N, size*count);
-	aff3ct::tools::write_to_device(fname, fs, allocated, size, count, 0x0);
-
+	//void* allocated = aligned_alloc(size, size*count);
+	//memcpy(allocated, X_N, size*count);
+	aff3ct::tools::write_to_device(fwrite, this->fs_write, X_N, size, count, 0x0);
+	/*
 	printf("Writed %i elements of size %i \n", count, size);
 	for(auto i = 0; i < count; i++)
 	{
-		printf("Writed : %d \n", ((D*)allocated)[i], size);
+		printf("Writed : %d \n", ((D*)X_N)[i], size);
 	}
-	fclose(fs);
-	free(allocated);
+	*/
+	//fclose(fs);
+	//free(allocated);
 }
 
 
@@ -169,25 +176,24 @@ void FPGA<D>
 ::_receive(D *Y_N, const int frame_id)
 {
 	// Read implementation
-	const char* fname = "/dev/xdma0_c2h_0";
-	FILE* fs = fopen(fname,"rb");
+	const char* fread = "/dev/xdma0_c2h_0";
 
 	const size_t size = sizeof(*Y_N);
 	const size_t count = this->N*this->n_frames;
 	
-	void* allocated = aligned_alloc(size, size*count);
-	aff3ct::tools::read_from_device(fname, fs, allocated, size, count, 0x0);
+	//void* allocated = aligned_alloc(size, size*count);
+	aff3ct::tools::read_from_device(fread, this->fs_read, Y_N, size, count, 0x0);
 
-	memcpy(Y_N, allocated, size*count);
-
+	//memcpy(Y_N, allocated, size*count);
+	/*
 	printf("Reading %i elements of size %i \n", count, size);
 	for(auto i = 0; i < count; i++)
 	{
 		printf("Reading : %d \n", Y_N[i], size);
 	}
-
-	fclose(fs);
-	free(allocated);
+	*/
+	//fclose(fs);
+	//free(allocated);
 }
 
 }

@@ -46,6 +46,8 @@ public:
 
 protected:
 	const int N; /*!< Size of one frame */
+	FILE* fs_read;
+	FILE* fs_write;
 public:
 	/*!
 	 * \brief Constructor.
