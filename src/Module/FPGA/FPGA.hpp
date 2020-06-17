@@ -46,9 +46,6 @@ public:
 
 protected:
 	const int N; /*!< Size of one frame */
-
-	std::vector<D> data;
-
 public:
 	/*!
 	 * \brief Constructor.

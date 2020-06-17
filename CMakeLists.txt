@@ -12,6 +12,7 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 
 # Generate the source files lists
 set(SRC_FILES_LIB ${CMAKE_CURRENT_SOURCE_DIR}/src/Factory/Module/FPGA/FPGA.cpp)
+set(SRC_FILES_LIB ${SRC_FILES_LIB} ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools/fpga_utils.cpp)
 set(SRC_FILES_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
 # add library & executable
@@ -19,6 +20,7 @@ add_library   (fpga_pcie_aff3ct_lib STATIC ${SRC_FILES_LIB})
 add_executable(fpga_pcie_aff3ct            ${SRC_FILES_MAIN})
 
 target_include_directories(fpga_pcie_aff3ct_lib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>)
+target_include_directories(fpga_pcie_aff3ct_lib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>)
 target_include_directories(fpga_pcie_aff3ct     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>)
 
 # Configure the AFF3CT library before compiling it
