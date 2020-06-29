@@ -4,32 +4,48 @@
 
 #include "Tools/fpga_utils.hpp"
 
-bool aff3ct::tools::write_to_device(const char* fname, FILE* fs, const void* buffer, uint64_t size, int count, uint64_t address)
+bool aff3ct::tools::write_to_device(FILE* fs, void* buffer, size_t size, size_t count, uint64_t address)
 {
-    // Setting address with an offset in the file stream
-    if (fseek(fs, address, SEEK_SET)){
-        std::cerr << fname << " (write) : error setting offset for address " << address << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    // Writing to the file
-    if (fwrite(buffer, size, count, fs) != count){
-        std::cerr << fname << " : error writing" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    return(true);
+	int rc = 0;
+	// Setting address with an offset in the file stream
+	rc = fseek(fs, address, SEEK_SET);
+	if (rc != 0){
+		perror("Error seeking address");
+		exit(EXIT_FAILURE); //TODO HANDLE
+	}
+
+	//Writing to the file
+	rc = fwrite(buffer, size, count, fs);
+	if (rc != count){
+		perror("Error writing to channel");
+		exit(EXIT_FAILURE); //TODO HANDLE
+	}
+
+	// Rewinding or it causes issue
+	rc = fseek(fs, 0x0, SEEK_SET);
+
+	return(true);
 }
 
-bool aff3ct::tools::read_from_device(const char* fname, FILE* fs, void* buffer, uint64_t size, int count, uint64_t address)
-{
-    // Setting address with an offset in the file stream
-    if (fseek(fs, address, SEEK_SET)){
-        std::cerr << fname << " (read) :error setting offset for address " << address << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    // Reading from the file
-    if (fread(buffer, size, count, fs) != count){
-        std::cerr << fname << " : error reading" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    return(true);
+bool aff3ct::tools::read_from_device(FILE* fs, void* buffer, size_t size, size_t count, uint64_t address)
+{   
+	int rc = 0;
+	// Setting address with an offset in the file stream
+	rc = fseek(fs, address, SEEK_SET);
+	if (rc != 0){
+		perror("Error seeking address");
+		exit(EXIT_FAILURE); //TODO HANDLE
+	}
+
+	// Reading from the file
+	rc = fread(buffer, size, count, fs) ;
+	if (rc != count){
+		perror("Error reading from channel");
+		exit(EXIT_FAILURE); //TODO HANDLE
+	}
+
+	// Rewinding or it causes issue
+	rc = fseek(fs, 0x0, SEEK_SET);
+
+	return(true);
 }

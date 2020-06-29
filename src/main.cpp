@@ -17,7 +17,7 @@ void init_params(int argc, char** argv, params &p);
 struct modules
 {
 	std::unique_ptr<module::Source<>>       source;
-	std::unique_ptr<module::FPGA<>  >       fpga;
+	std::unique_ptr<module::FPGA<>>         fpga;
 	std::unique_ptr<module::Monitor_BFER<>> monitor;
 	std::vector<const module::Module*>      list; // list of module pointers declared in this structure
 };
@@ -30,12 +30,11 @@ struct utils
 };
 void init_utils(const params &p, const modules &m, utils &u);
 
-
 int main(int argc, char** argv)
 {
-	params  p; init_params (argc, argv, p); // create and initialize the parameters from the command line with factories
-	modules m; init_modules(p, m         ); // create and initialize the modules
-	utils   u; init_utils  (p, m, u      ); // create and initialize the utils
+	params  p; init_params (argc, argv, p  ); // create and initialize the parameters from the command line with factories
+	modules m; init_modules(p, m           ); // create and initialize the modules
+	utils   u; init_utils  (p, m, u        ); // create and initialize the utils
 
 	// display the legend in the terminal
 	u.terminal->legend();
@@ -46,31 +45,22 @@ int main(int argc, char** argv)
 	(*m.monitor)[mnt::sck::check_errors::U   ].bind((*m.source )[src::sck::generate   ::U_K]);
 	(*m.monitor)[mnt::sck::check_errors::V   ].bind((*m.fpga   )[fpg::sck::receive    ::Y_N]);
 
-	// loop over the various SNRs
-	while (true)
+
+	// display the performance (BER and FER) in real time (in a separate thread)
+	u.terminal->start_temp_report();
+
+	// run the simulation chain for a certain number of frames
+	//while (!u.terminal->is_interrupt())
+	for (auto i = 0; i <= 1000; i++)
 	{
-		// display the performance (BER and FER) in real time (in a separate thread)
-		u.terminal->start_temp_report();
-
-		// run the simulation chain
-		while (!u.terminal->is_interrupt())
-		{
-			(*m.source )[src::tsk::generate    ].exec();
-			(*m.fpga   )[fpg::tsk::send        ].exec();
-			(*m.fpga   )[fpg::tsk::receive     ].exec();
-			(*m.monitor)[mnt::tsk::check_errors].exec();
-		}
-
-		// display the performance (BER and FER) in the terminal
-		u.terminal->final_report();
-
-		// reset the monitor and the terminal for the next SNR
-		m.monitor->reset();
-		u.terminal->reset();
-
-		// if user pressed Ctrl+c twice, exit the SNRs loop
-		if (u.terminal->is_over()) break;
+		(*m.source )[src::tsk::generate    ].exec();
+		(*m.fpga   )[fpg::tsk::send        ].exec();
+		(*m.fpga   )[fpg::tsk::receive     ].exec();
+		(*m.monitor)[mnt::tsk::check_errors].exec();
 	}
+
+	// display the performance (BER and FER) in the terminal
+	u.terminal->final_report();
 
 	// display the statistics of the tasks (if enabled)
 	std::cout << "#" << std::endl;
@@ -83,12 +73,12 @@ int main(int argc, char** argv)
 
 void init_params(int argc, char** argv, params &p)
 {
-	p.source   = std::unique_ptr<factory::Source          >(new factory::Source      ());
-	p.fpga     = std::unique_ptr<factory::FPGA            >(new factory::FPGA        ());
-	p.monitor  = std::unique_ptr<factory::Monitor_BFER    >(new factory::Monitor_BFER());
-	p.terminal = std::unique_ptr<factory::Terminal        >(new factory::Terminal    ());
+	p.source   = std::unique_ptr<factory::Source          >(new factory::Source          ());
+	p.fpga     = std::unique_ptr<factory::FPGA            >(new factory::FPGA            ());
+	p.monitor  = std::unique_ptr<factory::Monitor_BFER    >(new factory::Monitor_BFER    ());
+	p.terminal = std::unique_ptr<factory::Terminal        >(new factory::Terminal        ());
 
-	std::vector<factory::Factory*> params_list = { p.source .get(), p.monitor.get(), p.fpga.get(), p.terminal.get() };
+	std::vector<factory::Factory*> params_list = { p.source.get(), p.monitor.get(), p.fpga.get(), p.terminal.get() };
 
 	// parse the command for the given parameters and fill them
 	tools::Command_parser cp(argc, argv, params_list, true);
@@ -107,7 +97,7 @@ void init_params(int argc, char** argv, params &p)
 }
 
 void init_modules(const params &p, modules &m)
-{
+{	
 	m.source  = std::unique_ptr<module::Source      <>>(p.source ->build());
 	m.fpga    = std::unique_ptr<module::FPGA        <>>(p.fpga   ->build());
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build());

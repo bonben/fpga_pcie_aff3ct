@@ -43,11 +43,12 @@ public:
 	inline Task&   operator[](const fpg::tsk          t);
 	inline Socket& operator[](const fpg::sck::send    s);
     inline Socket& operator[](const fpg::sck::receive s);
-
 protected:
 	const int N; /*!< Size of one frame */
+	
 	FILE* fs_read;
 	FILE* fs_write;
+	
 public:
 	/*!
 	 * \brief Constructor.
@@ -58,9 +59,9 @@ public:
 	FPGA(const int N, const int n_frames = 1);
 
 	/*!
-	 * \brief Destructor.
+	 * \brief Destructor (non-default).
 	 */
-	virtual ~FPGA() = default;
+	virtual ~FPGA();
 
 	virtual FPGA<D>* clone() const;
 

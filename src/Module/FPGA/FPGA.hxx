@@ -42,12 +42,24 @@ FPGA<D>
 	this->set_name(name);
 	this->set_short_name(name);
 
-	// Read/write file automatically linked with this module for performance testing
-	const char* fread = "/dev/xdma0_c2h_0";
 	const char* fwrite = "/dev/xdma0_h2c_0";
-	this->fs_write = fopen(fwrite, "wb");
-	this->fs_read = fopen(fread, "rb");
+	const char* fread = "/dev/xdma0_c2h_0";
+
+	// Read/write file automatically linked with this module for performance testing
 	
+	this->fs_write = fopen(fwrite, "wb");
+	if (this->fs_write == NULL)
+	{
+		perror("Error opening writing channel");
+		exit(EXIT_FAILURE);
+	}
+
+	this->fs_read = fopen(fread, "rb");
+	if (this->fs_read == NULL)
+	{
+		perror("Error opening reading channel");
+		exit(EXIT_FAILURE);
+	}
 
 	if (N <= 0)
 	{
@@ -75,6 +87,15 @@ FPGA<D>
 
 		return status_t::SUCCESS;
 	});
+}
+
+template <typename D>
+FPGA<D>
+::~FPGA()
+{
+	// Closing opened device files
+	fclose(this->fs_read);
+	fclose(this->fs_write);
 }
 
 template <typename D>
@@ -124,24 +145,19 @@ template <typename D>
 void FPGA<D>
 ::_send(D *X_N, const int frame_id)
 {
-	// Write implementation
-	const char* fwrite = "/dev/xdma0_h2c_0";
-
-	const size_t size = sizeof(*X_N);
+	const size_t size = sizeof(D);
 	const size_t count = this->N*this->n_frames;
 
-	//void* allocated = aligned_alloc(size, size*count);
-	//memcpy(allocated, X_N, size*count);
-	aff3ct::tools::write_to_device(fwrite, this->fs_write, X_N, size, count, 0x0);
+	aff3ct::tools::write_to_device(this->fs_write, X_N, size, count, 0xc0000000);
+
 	/*
-	printf("Writed %i elements of size %i \n", count, size);
+	printf("Written %i elements of size %i \n", count, size);
 	for(auto i = 0; i < count; i++)
 	{
-		printf("Writed : %d \n", ((D*)X_N)[i], size);
+		printf("Written : %d \n", X_N[i]);
 	}
 	*/
-	//fclose(fs);
-	//free(allocated);
+
 }
 
 
@@ -175,25 +191,24 @@ template <typename D>
 void FPGA<D>
 ::_receive(D *Y_N, const int frame_id)
 {
-	// Read implementation
-	const char* fread = "/dev/xdma0_c2h_0";
-
-	const size_t size = sizeof(*Y_N);
+	const size_t size = sizeof(D);
 	const size_t count = this->N*this->n_frames;
 	
-	//void* allocated = aligned_alloc(size, size*count);
-	aff3ct::tools::read_from_device(fread, this->fs_read, Y_N, size, count, 0x0);
+	void* rbuffer = aligned_alloc(size, size * count);
 
-	//memcpy(Y_N, allocated, size*count);
+	aff3ct::tools::read_from_device(this->fs_read, rbuffer, size, count, 0xc0000000);
+	
+	memcpy(Y_N, rbuffer, size * count);
+	
 	/*
 	printf("Reading %i elements of size %i \n", count, size);
+
 	for(auto i = 0; i < count; i++)
 	{
-		printf("Reading : %d \n", Y_N[i], size);
+		printf("Reading : %d \n", Y_N[i]);
 	}
 	*/
-	//fclose(fs);
-	//free(allocated);
+	free(rbuffer);
 }
 
 }
