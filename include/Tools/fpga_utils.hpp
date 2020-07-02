@@ -14,8 +14,8 @@ namespace aff3ct
 namespace tools
 {
 
-bool write_to_device  (FILE*, void*, size_t, size_t, uint64_t);
-bool read_from_device (FILE*, void*, size_t, size_t, uint64_t);
+void write_to_device  (FILE*, void*, size_t, size_t, uint64_t);
+void read_from_device (FILE*, void*, size_t, size_t, uint64_t);
 
 }
 }

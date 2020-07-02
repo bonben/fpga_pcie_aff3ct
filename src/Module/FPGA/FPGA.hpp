@@ -46,8 +46,10 @@ public:
 protected:
 	const int N; /*!< Size of one frame */
 	
-	FILE* fs_read;
-	FILE* fs_write;
+	FILE* fs_read;  /*!< Char dev file representing the DMA channel linked to this module */
+	FILE* fs_write; /*!< Char dev file representing the DMA channel linked to this module */
+
+	int buffer_count; /*!< Number of 4096-buffers we need */
 	
 public:
 	/*!

@@ -1,7 +1,8 @@
 #include <string>
-#include <sstream>
-#include <fstream>
+
 #include <cstring>
+#include <sstream>
+#include <stdlib.h>
 
 #include "Tools/Exception/exception.hpp"
 #include "Module/FPGA/FPGA.hpp"
@@ -46,20 +47,24 @@ FPGA<D>
 	const char* fread = "/dev/xdma0_c2h_0";
 
 	// Read/write file automatically linked with this module for performance testing
-	
 	this->fs_write = fopen(fwrite, "wb");
 	if (this->fs_write == NULL)
 	{
-		perror("Error opening writing channel");
-		exit(EXIT_FAILURE);
+		std::stringstream message;
+		message << "Error opening " << fwrite << " : " << std::strerror(errno);
+		throw tools::io_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
 	this->fs_read = fopen(fread, "rb");
 	if (this->fs_read == NULL)
 	{
-		perror("Error opening reading channel");
-		exit(EXIT_FAILURE);
+		std::stringstream message;
+		message << "Error opening " << fread << " : " << std::strerror(errno);
+		throw tools::io_error(__FILE__, __LINE__, __func__, message.str());
 	}
+
+	// We also compute how many descriptor we need and some variables so we don't need to compute everytime
+	this->buffer_count = ((this->N * this->n_frames * sizeof(D)- 1)/4096) + 1;
 
 	if (N <= 0)
 	{
@@ -145,21 +150,12 @@ template <typename D>
 void FPGA<D>
 ::_send(D *X_N, const int frame_id)
 {
-	const size_t size = sizeof(D);
-	const size_t count = this->N*this->n_frames;
-
-	aff3ct::tools::write_to_device(this->fs_write, X_N, size, count, 0xc0000000);
-
-	/*
-	printf("Written %i elements of size %i \n", count, size);
-	for(auto i = 0; i < count; i++)
-	{
-		printf("Written : %d \n", X_N[i]);
-	}
-	*/
-
+	// Buffer size MUST be multiple of 4096 due to driver implementation
+	void* wbuffer = aligned_alloc(4096, 4096 * this->buffer_count);
+	std::memcpy(wbuffer, X_N, sizeof(D) * this->N * this->n_frames);
+	aff3ct::tools::write_to_device(this->fs_write, wbuffer, 4096, this->buffer_count, 0xc0000000);
+	std::free(wbuffer);
 }
-
 
 template <typename D>
 template <class A>
@@ -187,28 +183,16 @@ void FPGA<D>
 	for (auto f = f_start; f < f_stop; f++)
 		this->_receive(Y_N + f * this->N, f);
 }
+
 template <typename D>
 void FPGA<D>
 ::_receive(D *Y_N, const int frame_id)
-{
-	const size_t size = sizeof(D);
-	const size_t count = this->N*this->n_frames;
-	
-	void* rbuffer = aligned_alloc(size, size * count);
-
-	aff3ct::tools::read_from_device(this->fs_read, rbuffer, size, count, 0xc0000000);
-	
-	memcpy(Y_N, rbuffer, size * count);
-	
-	/*
-	printf("Reading %i elements of size %i \n", count, size);
-
-	for(auto i = 0; i < count; i++)
-	{
-		printf("Reading : %d \n", Y_N[i]);
-	}
-	*/
-	free(rbuffer);
+{	
+	// Buffer size MUST be multiple of 4096 due to driver implementation
+	void* rbuffer = aligned_alloc(4096, this->buffer_count * 4096);
+	aff3ct::tools::read_from_device(this->fs_read, rbuffer, 4096, this->buffer_count, 0xc0000000);
+	std::memcpy(Y_N, rbuffer, sizeof(D) * this->N * this->n_frames);
+	std::free(rbuffer);
 }
 
 }
