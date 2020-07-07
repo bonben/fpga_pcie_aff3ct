@@ -50,6 +50,9 @@ protected:
 	FILE* fs_write; /*!< Char dev file representing the DMA channel linked to this module */
 
 	int buffer_count; /*!< Number of 4096-buffers we need */
+
+	void* rbuffer;
+	void* wbuffer;
 	
 public:
 	/*!

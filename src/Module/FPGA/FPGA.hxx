@@ -72,6 +72,9 @@ FPGA<D>
 		message << "'N' has to be greater than 0 ('N' = " << N << ").";
 		throw tools::invalid_argument(__FILE__, __LINE__, __func__, message.str());
 	}
+	// Allocate memory buffers. MUST be a multiple of 4096 (DMA specs)
+	this->rbuffer = aligned_alloc(4096, this->buffer_count * 4096);
+	this->wbuffer = aligned_alloc(4096, 4096 * this->buffer_count);
 
 	// This is an input socket because the task **receives** data from another module and sends it to FPGA
 	auto &p1 = this->create_task("send");
@@ -101,6 +104,10 @@ FPGA<D>
 	// Closing opened device files
 	fclose(this->fs_read);
 	fclose(this->fs_write);
+
+	// Deallocate memory
+	std::free(this->wbuffer);
+	std::free(this->rbuffer);
 }
 
 template <typename D>
@@ -150,11 +157,8 @@ template <typename D>
 void FPGA<D>
 ::_send(D *X_N, const int frame_id)
 {
-	// Buffer size MUST be multiple of 4096 due to driver implementation
-	void* wbuffer = aligned_alloc(4096, 4096 * this->buffer_count);
-	std::memcpy(wbuffer, X_N, sizeof(D) * this->N * this->n_frames);
-	aff3ct::tools::write_to_device(this->fs_write, wbuffer, 4096, this->buffer_count, 0xc0000000);
-	std::free(wbuffer);
+	std::memcpy(this->wbuffer, X_N, sizeof(D) * this->N * this->n_frames);
+	aff3ct::tools::write_to_device(this->fs_write, this->wbuffer, 4096, this->buffer_count, 0xc0000000);
 }
 
 template <typename D>
@@ -188,11 +192,8 @@ template <typename D>
 void FPGA<D>
 ::_receive(D *Y_N, const int frame_id)
 {	
-	// Buffer size MUST be multiple of 4096 due to driver implementation
-	void* rbuffer = aligned_alloc(4096, this->buffer_count * 4096);
-	aff3ct::tools::read_from_device(this->fs_read, rbuffer, 4096, this->buffer_count, 0xc0000000);
-	std::memcpy(Y_N, rbuffer, sizeof(D) * this->N * this->n_frames);
-	std::free(rbuffer);
+	aff3ct::tools::read_from_device(this->fs_read, this->rbuffer, 4096, this->buffer_count, 0xc0000000);
+	std::memcpy(Y_N, this->rbuffer, sizeof(D) * this->N * this->n_frames);
 }
 
 }
