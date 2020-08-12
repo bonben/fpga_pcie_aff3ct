@@ -13,6 +13,8 @@ set (EXECUTABLE_OUTPUT_PATH bin/)
 # Generate the source files lists
 set(SRC_FILES_LIB ${CMAKE_CURRENT_SOURCE_DIR}/src/Factory/Module/FPGA/FPGA.cpp)
 set(SRC_FILES_LIB ${SRC_FILES_LIB} ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools/fpga_utils.cpp)
+set(SRC_FILES_LIB ${SRC_FILES_LIB} ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools/Exception/io_error/io_error.cpp)
+set(SRC_FILES_LIB ${SRC_FILES_LIB} ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools/exception_fpga.cpp)
 set(SRC_FILES_MAIN ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
 # add library & executable

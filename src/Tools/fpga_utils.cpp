@@ -4,6 +4,7 @@
 
 #include "Tools/fpga_utils.hpp"
 #include "Tools/Exception/exception.hpp"
+#include "Tools/Exception/exception_fpga.hpp"
 
 void aff3ct::tools::write_to_device(FILE* fs, void* buffer, size_t size, size_t count, uint64_t address)
 {

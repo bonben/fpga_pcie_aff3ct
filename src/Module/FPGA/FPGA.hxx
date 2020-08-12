@@ -8,6 +8,7 @@
 #include <fcntl.h> // C lib for various function including "open" function
 
 #include "Tools/Exception/exception.hpp"
+#include "Tools/Exception/exception_fpga.hpp"
 #include "Module/FPGA/FPGA.hpp"
 #include "Tools/fpga_utils.hpp"
 

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#BRAM size is 256kB
+bram_size=262144
+#Data type size in bytes. 
+type_size=4
+
+#Number of frames (=N=K)
+N_K=1
+
+total_size=$type_size*$N_K
+
+while [[ $total_size -le $bram_size ]]
+do
+    ./fpga_pcie_aff3ct -K $N_K -N $N_K --src-implem FAST
+    N_K=$[2*$N_K]
+    total_size=$[$type_size*$N_K]
+done
