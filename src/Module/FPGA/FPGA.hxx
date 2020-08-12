@@ -4,6 +4,9 @@
 #include <sstream>
 #include <stdlib.h>
 
+#include <poll.h> // C lib for polling event
+#include <fcntl.h> // C lib for various function including "open" function
+
 #include "Tools/Exception/exception.hpp"
 #include "Module/FPGA/FPGA.hpp"
 #include "Tools/fpga_utils.hpp"
@@ -46,7 +49,10 @@ FPGA<D>
 	const char* fwrite = "/dev/xdma0_h2c_0";
 	const char* fread = "/dev/xdma0_c2h_0";
 
-	// Read/write file automatically linked with this module for performance testing
+	/*
+	Opening the write device file, so we don't need to reopen it everytime. Reopening this file for every write
+	causes huge performance loss.
+	*/
 	this->fs_write = fopen(fwrite, "wb");
 	if (this->fs_write == NULL)
 	{
@@ -55,6 +61,10 @@ FPGA<D>
 		throw tools::io_error(__FILE__, __LINE__, __func__, message.str());
 	}
 
+	/*
+	Opening the read device file, so we don't need to reopen it everytime. Reopening this file for every read
+	causes huge performance loss.
+	*/
 	this->fs_read = fopen(fread, "rb");
 	if (this->fs_read == NULL)
 	{
@@ -157,8 +167,49 @@ template <typename D>
 void FPGA<D>
 ::_send(D *X_N, const int frame_id)
 {
+	/*
+	wbuffer is reserved in the module constructor. It's an aligned memory block which size is a multiple of 4096.
+	A multiple of 4096 is mandatory for the XDMA memory descriptors to work properly.
+	*/
 	std::memcpy(this->wbuffer, X_N, sizeof(D) * this->N * this->n_frames);
+
+	// Writing to the FPGA memory. This function will block process until XDMA transfer is over.
 	aff3ct::tools::write_to_device(this->fs_write, this->wbuffer, 4096, this->buffer_count, 0xc0000000);
+	
+	/*
+	// Monitoring what bits we wrote.
+	for (int i = 0; i < this->N; i++){
+		printf("Wrote : %d \n", *((int*)this->wbuffer + i));
+	}
+	*/
+
+	// We now poll on event device to handle an interrupt from card, telling FPGA process is done !
+	int fd0 = open("/dev/xdma0_events_0", O_RDONLY);
+    struct pollfd fds[] = {
+        {fd0, POLLIN}
+    };
+
+    int r = poll(fds, 1, 1000); // 1sec timeout
+    int read_fd;
+
+    if (r < 0){
+		std::stringstream message;
+		message << "Error polling event";
+        throw tools::io_error(__FILE__, __LINE__, __func__, message.str());
+    } else if (r == 0) {
+		std::stringstream message;
+		message << "Timeout error : no event received";
+		throw tools::io_error(__FILE__, __LINE__, __func__, message.str());
+	} else {
+        if(fds[0].revents & POLLIN) {
+            std::cout << "Event triggered !" << std::endl;
+            read_fd = fd0;
+        }
+        uint32_t events_user;
+        pread(read_fd, &events_user, sizeof(events_user), 0);
+    }
+    close(fd0);
+
 }
 
 template <typename D>
@@ -192,9 +243,24 @@ template <typename D>
 void FPGA<D>
 ::_receive(D *Y_N, const int frame_id)
 {	
+	// Reading to the FPGA memory. This function will block process until XDMA transfer is over.
 	aff3ct::tools::read_from_device(this->fs_read, this->rbuffer, 4096, this->buffer_count, 0xc0000000);
+
+	/*
+	rbuffer is reserved in the module constructor. It's an aligned memory block which size is a multiple of 4096.
+	A multiple of 4096 is mandatory for the XDMA memory descriptors to work properly.
+	*/
 	std::memcpy(Y_N, this->rbuffer, sizeof(D) * this->N * this->n_frames);
+	
+	/*
+	// Monitoring what we read from the FPGA.
+	for (int i = 0; i < this->N; i++){
+		printf("Read : %d \n", *((int*)this->rbuffer + i));
+	}
+	*/
 }
 
+
 }
+
 }

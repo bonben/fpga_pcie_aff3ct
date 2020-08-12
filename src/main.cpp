@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 
 	// run the simulation chain for a certain number of frames
 	// while (!u.terminal->is_interrupt())
-	for (auto i = 0; i < 1000; i++)
+	for (auto i = 0; i < 10; i++)
 	{
 		(*m.source )[src::tsk::generate    ].exec();
 		(*m.fpga   )[fpg::tsk::send        ].exec();
@@ -103,8 +103,8 @@ void init_params(int argc, char** argv, params &p)
 
 void init_modules(const params &p, modules &m)
 {	
-	m.source  = std::unique_ptr<module::Source<>>(p.source ->build<>());
-	m.fpga    = std::unique_ptr<module::FPGA  <>>(p.fpga   ->build<>());
+	m.source  = std::unique_ptr<module::Source      <>>(p.source ->build<>());
+	m.fpga    = std::unique_ptr<module::FPGA        <>>(p.fpga   ->build<>());
 	m.monitor = std::unique_ptr<module::Monitor_BFER<>>(p.monitor->build<>());
 
 	m.list = { m.source.get(), m.monitor.get(), m.fpga.get() };
