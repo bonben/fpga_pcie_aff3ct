@@ -9,7 +9,7 @@ This project aims to provide a software/hardware interface between AFF3CT and a 
 
 A example global architecture of the project can be found here. This repository only contains the AFF3CT implementation of the project and does not contain any hardware design.
 
-![FPGA PCIe with AFF3CT global architecture scheme](https://github.com/bonben/fpga_pcie_aff3ct/edit/master/global_architecture.svg "FPGA PCIe with AFF3CT global architecture scheme")
+![FPGA PCIe with AFF3CT global architecture scheme](global_architecture.png "FPGA PCIe with AFF3CT global architecture scheme")
 
 ## Build
 
@@ -35,6 +35,6 @@ rm -r .git/modules/lib/aff3ct
 
 We're able to achieve high-performance data transfer from AFF3CT to FPGA memory and from FPGA memory to AFF3CT. With a PCIe Gen3 x8 configuration, data rate goes up to 4GB/s.
 
-![AFF3CT performance demo](https://github.com/bonben/fpga_pcie_aff3ct/edit/master/perf.png "AFF3CT performance demo")
+![AFF3CT performance demo](perf.png "AFF3CT performance demo")
 
 In this picture, AFF3CT shows a transfer rate of about 1000 Mb/s for both `send` and `receive` transfer with 32 bits encoded data, which means an effective data rate of 32*1000 = 4 GB/s. Maximum theoretical data rate in this configuration is 7.88 GB/s __without__ AFF3CT.
